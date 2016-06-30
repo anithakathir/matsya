@@ -59,14 +59,12 @@ class Matsya(ec2: AmazonEC2Client,
 
   // As of now, we only find new settings that were added to the config
   def syncSpotFleetClusterSettings(): Unit = {
-    config.clusters
+//    config.asgClusters
 
   }
 
   def syncASGClusterSettings(): Unit = {
-    config.clusters
-      .filter(c => c.`type` == ConfigEnum.ASG)
-      .map(_.asInstanceOf[ClusterConfig])
+    config.asgClusters
       .filterNot(c => stateStore.exists(c.name))
       .foreach(c => {
         logger.info(s"New cluster ${c.name} found")
@@ -102,7 +100,7 @@ class Matsya(ec2: AmazonEC2Client,
   }
 
   def checkClusters(): Unit = {
-    config.clusters.foreach(clusterConfig => {
+    config.asgClusters.foreach(clusterConfig => {
       val previousState = stateStore.get(clusterConfig.name)
       val currentPrice = timeSeriesStore.get(clusterConfig.machineType, previousState.az).maxBy(_.timestamp).price
       val updatedState = previousState.copy(price = currentPrice)
@@ -236,7 +234,7 @@ object MatsyaApp extends App {
   )
 
   system.updatePriceHistory()
-  system.syncClusterSettings()
+  system.syncASGClusterSettings()
   system.checkClusters()
   system.shutdown()
 }

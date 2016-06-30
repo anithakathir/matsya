@@ -23,10 +23,9 @@ case class ClusterConfig(name: String,
                          maxBidPrice: Double,
                          odPrice: Double,
                          fallBackToOnDemand: Boolean,
-                         odCoolOffPeriodInMillis: Long) extends ClusterDetails {
+                         odCoolOffPeriodInMillis: Long) {
 
   def allAZs = subnets.keySet
-  def `type` = ConfigEnum.ASG
   def getMachineType = this.machineType
 }
 
@@ -54,26 +53,28 @@ object ClusterConfig {
   }
 }
 
-case class MatsyaConfig(clusters: List[ClusterDetails], workingDir: String, slackWebHook: Option[String]) {
+case class MatsyaConfig(asgClusters: List[ClusterConfig] = List(), spotFleetClusters: List[SpotFleetClusterConfig] = List(),
+                        workingDir: String, slackWebHook: Option[String]) {
   def stateDir = workingDir + "/" + "state"
   def historyDir = workingDir + "/" + "history"
   def getRegion = "us-east-1"
-  def machineTypes = clusters.map(_.getMachineType)
+  //FIXME what should the machine types be for spotFleet?
+  def machineTypes = asgClusters.map(_.machineType).toSet //++ spotFleetClusters.map(_.getMachineType)
 }
 
 object MatsyaConfig {
   def from(config: Config) = {
-    import scala.collection.JavaConversions._
-    val clustersConfig = config.getConfigList("clusters")
-    val clusters = clustersConfig.map {
-      clusterConfig => val clusterType =  ConfigEnum.withName(clusterConfig.getString("type"))
-      clusterType match {
-        case ConfigEnum.ASG => ClusterConfig.from(clusterConfig)
-        case ConfigEnum.Fleet => SpotFleetClusterConfig.from(clusterConfig)
-      }
-    }.toList
+    import scala.collection.JavaConverters._
+    val asgClustersConfig = if(config.hasPath("asgClusters")) config.getConfigList("asgClusters").asScala.toList
+    else List.empty[Config]
+    val spotFleetClustersConfig = if(config.hasPath("spotFleetClusters")) config.getConfigList("spotFleetClusters").asScala.toList
+    else List()
+    val asgClusters = asgClustersConfig.map(ClusterConfig.from)
+    val spotFleetClusters = spotFleetClustersConfig.map(SpotFleetClusterConfig.from)
+
     MatsyaConfig(
-      clusters = clusters,
+      asgClusters = asgClusters,
+      spotFleetClusters = spotFleetClusters,
       workingDir = config.getString("working-dir"),
       slackWebHook = optionString(config, "slack-webhook")
     )

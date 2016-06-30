@@ -1,14 +1,11 @@
 package in.ashwanthkumar.matsya.spotfleet
 
-import com.amazonaws.services.ec2.model.{SpotFleetRequestConfigData, SpotFleetLaunchSpecification, SpotFleetRequestConfig}
+import com.amazonaws.services.ec2.model.{SpotFleetRequestConfigData, SpotFleetLaunchSpecification}
 import com.typesafe.config.Config
-import in.ashwanthkumar.matsya.{ConfigEnum, ClusterDetails}
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-case class SpotFleetClusterConfig(config: SpotFleetRequestConfigData) extends ClusterDetails {
-	def `type` = ConfigEnum.Fleet
-
+case class SpotFleetClusterConfig(config: SpotFleetRequestConfigData) {
 	def getMachineType: mutable.Buffer[String] = {
 		config.getLaunchSpecifications.map {
 			spec => spec.getInstanceType
@@ -21,6 +18,7 @@ object SpotFleetClusterConfig {
 		val globalSpotPrice = config.getString("SpotPrice")
 		val targetCapacity = config.getInt("TargetCapacity")
 		val iamFleetRole = config.getString("IamFleetRole")
+		val allocationStrategy = if(config.hasPath("AllocationStrategy")) config.getString("AllocationStrategy") else "lowestPrice"
 		val launchSpecificationsConfig = config.getConfigList("LaunchSpecifications")
 		val launchSpecifications = launchSpecificationsConfig.map {
 		l =>
@@ -41,6 +39,7 @@ object SpotFleetClusterConfig {
 		spotFleetRequestConfigData.setSpotPrice(globalSpotPrice)
 		spotFleetRequestConfigData.setTargetCapacity(targetCapacity)
 		spotFleetRequestConfigData.setIamFleetRole(iamFleetRole)
+		spotFleetRequestConfigData.setAllocationStrategy(allocationStrategy)
 		spotFleetRequestConfigData.setLaunchSpecifications(launchSpecifications)
 		SpotFleetClusterConfig(spotFleetRequestConfigData)
 	}
