@@ -10,6 +10,7 @@ import com.typesafe.scalalogging.slf4j.Logger
 import in.ashwanthkumar.slack.webhook.Slack
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
+import scala.collection.JavaConversions._
 
 import scala.collection.JavaConverters._
 
@@ -57,8 +58,15 @@ class Matsya(ec2: AmazonEC2Client,
   }
 
   // As of now, we only find new settings that were added to the config
-  def syncClusterSettings(): Unit = {
+  def syncSpotFleetClusterSettings(): Unit = {
     config.clusters
+
+  }
+
+  def syncASGClusterSettings(): Unit = {
+    config.clusters
+      .filter(c => c.`type` == ConfigEnum.ASG)
+      .map(_.asInstanceOf[ClusterConfig])
       .filterNot(c => stateStore.exists(c.name))
       .foreach(c => {
         logger.info(s"New cluster ${c.name} found")
@@ -75,7 +83,7 @@ class Matsya(ec2: AmazonEC2Client,
           case (_, Some(odASG)) if odASG.getDesiredCapacity > 0 => (odASG.getAvailabilityZones.asScala.head, ClusterMode.OnDemand)
           case (Some(spotASG), _) => (spotASG.getAvailabilityZones.asScala.head, ClusterMode.Spot)
         }
-        val lastKnownPrice = timeSeriesStore.get(c.machineType, az).maxBy(_.timestamp)
+        val lastKnownPrice = timeSeriesStore.get(c.getMachineType, az).maxBy(_.timestamp)
         val state = State(c.name, az, lastKnownPrice.price, nrOfTimes = 0, mode, lastModeChangedTimestamp = 0, System.currentTimeMillis())
         stateStore.save(c.name, state)
       })

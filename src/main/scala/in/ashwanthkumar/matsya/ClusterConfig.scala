@@ -4,6 +4,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.{Config, ConfigFactory}
+import in.ashwanthkumar.matsya.spotfleet.SpotFleetClusterConfig
+
+import scala.collection.mutable
 
 case class ClusterConfig(name: String,
                          spotASG: String,
@@ -20,9 +23,11 @@ case class ClusterConfig(name: String,
                          maxBidPrice: Double,
                          odPrice: Double,
                          fallBackToOnDemand: Boolean,
-                         odCoolOffPeriodInMillis: Long) {
+                         odCoolOffPeriodInMillis: Long) extends ClusterDetails {
 
   def allAZs = subnets.keySet
+  def `type` = ConfigEnum.ASG
+  def getMachineType = this.machineType
 }
 
 object ClusterConfig {
@@ -49,18 +54,24 @@ object ClusterConfig {
   }
 }
 
-case class MatsyaConfig(clusters: List[ClusterConfig], workingDir: String, slackWebHook: Option[String]) {
+case class MatsyaConfig(clusters: List[ClusterDetails], workingDir: String, slackWebHook: Option[String]) {
   def stateDir = workingDir + "/" + "state"
   def historyDir = workingDir + "/" + "history"
   def getRegion = "us-east-1"
-
-  def machineTypes = clusters.map(_.machineType).toSet
+  def machineTypes = clusters.map(_.getMachineType)
 }
 
 object MatsyaConfig {
   def from(config: Config) = {
     import scala.collection.JavaConversions._
-    val clusters = config.getConfigList("clusters").map(ClusterConfig.from).toList
+    val clustersConfig = config.getConfigList("clusters")
+    val clusters = clustersConfig.map {
+      clusterConfig => val clusterType =  ConfigEnum.withName(clusterConfig.getString("type"))
+      clusterType match {
+        case ConfigEnum.ASG => ClusterConfig.from(clusterConfig)
+        case ConfigEnum.Fleet => SpotFleetClusterConfig.from(clusterConfig)
+      }
+    }.toList
     MatsyaConfig(
       clusters = clusters,
       workingDir = config.getString("working-dir"),
