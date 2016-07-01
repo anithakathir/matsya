@@ -27,10 +27,10 @@ case class State(name: String,
   def mode = if(onSpot) "Spot" else "On-Demand"
 }
 
-trait StateStore[T] extends AutoCloseable {
+trait StateStore extends AutoCloseable {
   def exists(clusterName: String): Boolean
-  def get(clusterName: String): T
-  def save(clusterName: String, state: AnyRef): Unit
+  def get(clusterName: String): State
+  def save(clusterName: String, state: State): Unit
 
   def updateLastRun(identifier: String): Unit
   def lastRun(identifier: String): Long

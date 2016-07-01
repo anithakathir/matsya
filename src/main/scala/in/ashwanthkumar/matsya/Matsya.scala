@@ -19,7 +19,6 @@ class Matsya(ec2: AmazonEC2Client,
              config: MatsyaConfig,
              timeSeriesStore: TimeSeriesStore,
              stateStore: StateStore,
-             spotFleetStateStore: StateStore,
              notifier: Notifier) {
 
 	private val LAST_RUN_IDENTIFIER = "MatsyaLastRun"
@@ -59,6 +58,7 @@ class Matsya(ec2: AmazonEC2Client,
 	}
 
 	// As of now, we only find new settings that were added to the config
+/*
 	def syncSpotFleetClusterSettings(): Unit = {
 		config.spotFleetClusters
 			.filterNot(c => spotFleetStateStore.exists(c.config.getClientToken))
@@ -69,6 +69,7 @@ class Matsya(ec2: AmazonEC2Client,
 			}
 
 	}
+*/
 
 	def syncASGClusterSettings(): Unit = {
 		config.asgClusters
@@ -248,9 +249,8 @@ object MatsyaApp extends App {
 		new AmazonEC2Client(),
 		new AmazonAutoScalingClient(),
 		config,
-		new RocksDBStore[TimeSeriesStore](config.historyDir),
-		new RocksDBStore[StateStore](config.stateDir),
-		new RocksDBStore[SpotFleetStateStore](config.spotFleetStateDir),
+		new RocksDBStore(config.historyDir),
+		new RocksDBStore(config.stateDir),
 		new SlackNotifier(config.slackWebHook.map(new Slack(_)))
 	)
 

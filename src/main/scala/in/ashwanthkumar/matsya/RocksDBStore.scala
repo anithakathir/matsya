@@ -5,7 +5,7 @@ import java.io.File
 import com.google.common.primitives.Longs
 import org.rocksdb.{FlushOptions, Options, RocksDB}
 
-class RocksDBStore[T](input: String) extends TimeSeriesStore with StateStore {
+class RocksDBStore(input: String) extends TimeSeriesStore with StateStore {
 
   RocksDB.loadLibrary()
 
@@ -35,7 +35,7 @@ class RocksDBStore[T](input: String) extends TimeSeriesStore with StateStore {
   override def get(name: String): State = {
     JSONUtil.fromJson[State](new String(delegate.get(name.getBytes)))
   }
-  override def save(name: String, state: AnyRef): Unit = {
+  override def save(name: String, state: State): Unit = {
     delegate.put(bytes(name), JSONUtil.toJSON(state).getBytes)
   }
   override def close(): Unit = {
