@@ -56,6 +56,7 @@ object ClusterConfig {
 case class MatsyaConfig(asgClusters: List[ClusterConfig] = List(), spotFleetClusters: List[SpotFleetClusterConfig] = List(),
                         workingDir: String, slackWebHook: Option[String]) {
   def stateDir = workingDir + "/" + "state"
+  def spotFleetStateDir = workingDir + "/" + "spot-fleet-state"
   def historyDir = workingDir + "/" + "history"
   def getRegion = "us-east-1"
   //FIXME what should the machine types be for spotFleet?

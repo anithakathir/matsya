@@ -15,6 +15,7 @@ case class SpotFleetClusterConfig(config: SpotFleetRequestConfigData) {
 
 object SpotFleetClusterConfig {
 	def from(config: Config): SpotFleetClusterConfig = {
+		val clientToken = config.getString("ClientToken")
 		val globalSpotPrice = config.getString("SpotPrice")
 		val targetCapacity = config.getInt("TargetCapacity")
 		val iamFleetRole = config.getString("IamFleetRole")
@@ -41,6 +42,7 @@ object SpotFleetClusterConfig {
 		spotFleetRequestConfigData.setIamFleetRole(iamFleetRole)
 		spotFleetRequestConfigData.setAllocationStrategy(allocationStrategy)
 		spotFleetRequestConfigData.setLaunchSpecifications(launchSpecifications)
+		spotFleetRequestConfigData.setClientToken(clientToken)
 		SpotFleetClusterConfig(spotFleetRequestConfigData)
 	}
 }

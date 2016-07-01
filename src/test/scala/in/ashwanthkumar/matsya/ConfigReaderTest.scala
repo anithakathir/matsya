@@ -1,5 +1,7 @@
 package in.ashwanthkumar.matsya
 
+import com.amazonaws.services.ec2.AmazonEC2Client
+import com.amazonaws.services.ec2.model.{DescribeSpotFleetInstancesRequest, RequestSpotFleetRequest}
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers.{be, convertToAnyShouldWrapper, have}
 
